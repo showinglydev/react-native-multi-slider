@@ -100,7 +100,23 @@ export default class MultiSlider extends React.Component {
     var initialValues = this.props.values.map(value =>
       valueToPosition(value, this.optionsArray, this.props.sliderLength));
 
+    this.state = {
+      pressedOne: true,
+      valueOne: this.props.values[0],
+      valueTwo: this.props.values[1],
+      pastOne: initialValues[0],
+      pastTwo: initialValues[1],
+      positionOne: initialValues[0],
+      positionTwo: initialValues[1],
+    };
 
+    this.subscribePanResponder();
+
+  }
+
+
+
+  subscribePanResponder = () => {
     var customPanResponder = (start, move, end) => {
       return PanResponder.create({
         onStartShouldSetPanResponder: (evt, gestureState) => true,
@@ -116,6 +132,21 @@ export default class MultiSlider extends React.Component {
       });
     };
 
+    this._panResponderBetween = customPanResponder(
+      gestureState => {
+        this.startOne(gestureState);
+        this.startTwo(gestureState);
+      },
+      gestureState => {
+        this.moveOne(gestureState);
+        this.moveTwo(gestureState);
+      },
+      gestureState => {
+        this.endOne(gestureState);
+        this.endTwo(gestureState);
+      },
+    );
+
     this._panResponderOne = customPanResponder(
       this.startOne,
       this.moveOne,
@@ -126,57 +157,111 @@ export default class MultiSlider extends React.Component {
       this.moveTwo,
       this.endTwo,
     );
+  };
 
-    this.state = {
-      pressedOne: true,
-      valueOne: this.props.values[0],
-      valueTwo: this.props.values[1],
-      pastOne: initialValues[0],
-      pastTwo: initialValues[1],
-      positionOne: initialValues[0],
-      positionTwo: initialValues[1],
-    };
-  }
+  // componentDidUpdate(nextProps) {
+  //   if (this.state.onePressed || this.state.twoPressed) {
+  //     return;
+  //   }
 
-  componentDidUpdate(nextProps) {
+  //   let nextState = {};
+  //   if (nextProps.min !== this.props.min ||
+  //     nextProps.max !== this.props.max ||
+  //     nextProps.values[0] !== this.state.valueOne ||
+  //     nextProps.sliderLength !== this.props.sliderLength ||
+  //     nextProps.values[1] !== this.state.valueTwo ||
+  //     (nextProps.sliderLength !== this.props.sliderLength &&
+  //       nextProps.values[1])
+  //   ) {
+  //     this.optionsArray = this.props.optionsArray ||
+  //       createArray(nextProps.min, nextProps.max, nextProps.step);
+
+  //     this.stepLength = this.props.sliderLength / this.optionsArray.length;
+
+  //     var positionOne = valueToPosition(
+  //       nextProps.values[0],
+  //       this.optionsArray,
+  //       nextProps.sliderLength,
+  //     );
+  //     nextState.valueOne = nextProps.values[0];
+  //     nextState.pastOne = positionOne;
+  //     nextState.positionOne = positionOne;
+
+  //     var positionTwo = valueToPosition(
+  //       nextProps.values[1],
+  //       this.optionsArray,
+  //       nextProps.sliderLength,
+  //     );
+  //     nextState.valueTwo = nextProps.values[1];
+  //     nextState.pastTwo = positionTwo;
+  //     nextState.positionTwo = positionTwo;
+  //   }
+
+  //   if (nextState != {}) {
+  //     this.setState(nextState);
+  //   }
+  // }
+
+
+
+  componentDidUpdate(prevProps, prevState) {
+    const {
+      positionOne: prevPositionOne,
+      positionTwo: prevPositionTwo,
+    } = prevState;
+
+    const { positionOne, positionTwo } = this.state;
+
+    if (
+      typeof positionOne === 'undefined' &&
+      typeof positionTwo !== 'undefined'
+    ) {
+      return;
+    }
+
+    if (positionOne !== prevPositionOne || positionTwo !== prevPositionTwo) {
+      this.props.onMarkersPosition([positionOne, positionTwo]);
+    }
+
     if (this.state.onePressed || this.state.twoPressed) {
       return;
     }
 
     let nextState = {};
-    if (nextProps.min !== this.props.min ||
-      nextProps.max !== this.props.max ||
-      nextProps.values[0] !== this.state.valueOne ||
-      nextProps.sliderLength !== this.props.sliderLength ||
-      nextProps.values[1] !== this.state.valueTwo ||
-      (nextProps.sliderLength !== this.props.sliderLength &&
-        nextProps.values[1])
+    if (
+      prevProps.min !== this.props.min ||
+      prevProps.max !== this.props.max ||
+      prevProps.step !== this.props.step ||
+      prevProps.values[0] !== this.props.values[0] ||
+      prevProps.sliderLength !== this.props.sliderLength ||
+      prevProps.values[1] !== this.props.values[1] ||
+      (prevProps.sliderLength !== this.props.sliderLength &&
+        prevProps.values[1])
     ) {
-      this.optionsArray = this.props.optionsArray ||
-        createArray(nextProps.min, nextProps.max, nextProps.step);
+      this.optionsArray =
+        this.props.optionsArray ||
+        createArray(this.props.min, this.props.max, this.props.step);
 
       this.stepLength = this.props.sliderLength / this.optionsArray.length;
 
-      var positionOne = valueToPosition(
-        nextProps.values[0],
+      const positionOne = valueToPosition(
+        this.props.values[0],
         this.optionsArray,
-        nextProps.sliderLength,
+        this.props.sliderLength,
       );
-      nextState.valueOne = nextProps.values[0];
+      nextState.valueOne = this.props.values[0];
       nextState.pastOne = positionOne;
       nextState.positionOne = positionOne;
 
-      var positionTwo = valueToPosition(
-        nextProps.values[1],
+      const positionTwo = valueToPosition(
+        this.props.values[1],
         this.optionsArray,
-        nextProps.sliderLength,
+        this.props.sliderLength,
       );
-      nextState.valueTwo = nextProps.values[1];
+      nextState.valueTwo = this.props.values[1];
       nextState.pastTwo = positionTwo;
       nextState.positionTwo = positionTwo;
-    }
 
-    if (nextState != {}) {
       this.setState(nextState);
     }
   }
